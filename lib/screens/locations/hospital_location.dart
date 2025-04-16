@@ -178,7 +178,7 @@ class _HospitalLocationState extends State<HospitalLocation> {
             ),
             const SizedBox(width: 8),
             Text(
-              'HealthQuest',
+              'MediMap',
               style: GoogleFonts.poppins(
                 color: const Color(0xFF00796B),
                 fontWeight: FontWeight.bold,

@@ -5,14 +5,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:logger/logger.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:clipboard/clipboard.dart';
 
 class HospitalLocation extends StatefulWidget {
   final List<String> testNames;
 
-  const HospitalLocation({
-    super.key,
-    required this.testNames,
-  });
+  const HospitalLocation({super.key, required this.testNames});
 
   @override
   _HospitalLocationState createState() => _HospitalLocationState();
@@ -34,7 +32,7 @@ class _HospitalLocationState extends State<HospitalLocation> {
 
   Future<void> _checkLocationPermission() async {
     final status = await Permission.location.status;
-    
+
     if (status.isDenied) {
       setState(() {
         _showLocationPrompt = true;
@@ -73,7 +71,8 @@ class _HospitalLocationState extends State<HospitalLocation> {
       builder: (context) => AlertDialog(
         title: const Text('Permission Required'),
         content: const Text(
-            'Location permission is permanently denied. Please enable it from app settings.'),
+          'Location permission is permanently denied. Please enable it from app settings.',
+        ),
         actions: [
           TextButton(
             onPressed: () {
@@ -95,7 +94,11 @@ class _HospitalLocationState extends State<HospitalLocation> {
       if (!_locationPermissionGranted) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location permission is required to find nearby hospitals')),
+            const SnackBar(
+              content: Text(
+                'Location permission is required to find nearby hospitals',
+              ),
+            ),
           );
         }
         return;
@@ -130,9 +133,11 @@ class _HospitalLocationState extends State<HospitalLocation> {
       if (response.statusCode == 200) {
         final responseData = response.data;
         _logger.i('Response data: $responseData');
-        if (responseData is Map<String, dynamic> && responseData.containsKey('institutions')) {
+        if (responseData is Map<String, dynamic> &&
+            responseData.containsKey('institutions')) {
           final institutions = responseData['institutions'];
           if (institutions is List) {
+            _logger.i('Institutions: $institutions');
             setState(() {
               hospitals = institutions;
             });
@@ -163,13 +168,24 @@ class _HospitalLocationState extends State<HospitalLocation> {
         backgroundColor: Colors.white,
         elevation: 1,
         centerTitle: true,
-        title: Text(
-          'Hospital Locations',
-          style: GoogleFonts.poppins(
-            color: const Color(0xFF00796B),
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'images/L.png',
+              width: 50,
+              height: 50,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'HealthQuest',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF00796B),
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+          ],
         ),
         iconTheme: const IconThemeData(color: Colors.black),
       ),
@@ -215,6 +231,9 @@ class _HospitalLocationState extends State<HospitalLocation> {
                         itemCount: hospitals.length,
                         itemBuilder: (context, index) {
                           final center = hospitals[index];
+                          if (center is! Map<String, dynamic>) {
+                            return const SizedBox.shrink();
+                          }
                           return _DiagnosticCenterCard(
                             center: center,
                             testNames: widget.testNames,
@@ -233,19 +252,14 @@ class _DiagnosticCenterCard extends StatelessWidget {
   final Map<String, dynamic> center;
   final List<String> testNames;
 
-  const _DiagnosticCenterCard({
-    required this.center,
-    required this.testNames,
-  });
+  const _DiagnosticCenterCard({required this.center, required this.testNames});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -254,15 +268,21 @@ class _DiagnosticCenterCard extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            if (center['isCertified'] == true || center['certified'] == true)
+            if ((center['credentials'] != null &&
+                    center['credentials'].isNotEmpty &&
+                    center['credentials'][0] == 'ISO Certified') ||
+                center['certified'] == true)
               Positioned(
                 top: 12,
                 right: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(15),
                   ),
                   child: Text(
                     'ISO Certified',
@@ -277,19 +297,42 @@ class _DiagnosticCenterCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.teal,
-                    ),
-                    child: const Icon(
-                      Icons.local_hospital,
-                      color: Colors.white,
-                      size: 30,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(50),
+                    child: Center(
+                      child: center['image'] != null
+                          ? Image.network(
+                              center['image'],
+                              width: 70,
+                              height: 70,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: 70,
+                                height: 70,
+                                color: const Color(0xFF00796B),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.local_hospital,
+                                    size: 40,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Container(
+                              width: 70,
+                              height: 70,
+                              color: const Color(0xFF00796B),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.local_hospital,
+                                  size: 40,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -298,20 +341,24 @@ class _DiagnosticCenterCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          center['name'] ?? 'No Name',
+                          center['name'] ?? 'Unknown Hospital',
                           style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: const Color(0xFF00796B),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            const Icon(Icons.local_hospital, color: Colors.black54, size: 18),
+                            const Icon(
+                              Icons.local_hospital,
+                              color: Colors.black87,
+                              size: 20,
+                            ),
                             const SizedBox(width: 4),
                             Text(
-                              center['type'] ?? 'Hospital',
+                              'Hospital',
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: Colors.black54,
@@ -322,7 +369,11 @@ class _DiagnosticCenterCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(Icons.location_on, color: Colors.black54, size: 18),
+                            const Icon(
+                              Icons.location_on,
+                              color: Colors.black87,
+                              size: 20,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: GestureDetector(
@@ -336,7 +387,9 @@ class _DiagnosticCenterCard extends StatelessWidget {
                                       );
                                     } else {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Could not open map link')),
+                                        const SnackBar(
+                                          content: Text('Could not open map link'),
+                                        ),
                                       );
                                     }
                                   }
@@ -345,7 +398,7 @@ class _DiagnosticCenterCard extends StatelessWidget {
                                   'Location',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
-                                    color: Colors.blue,
+                                    color: Colors.black54,
                                     decoration: TextDecoration.underline,
                                   ),
                                 ),
@@ -356,33 +409,49 @@ class _DiagnosticCenterCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(Icons.phone, color: Colors.black54, size: 18),
+                            const Icon(
+                              Icons.phone,
+                              color: Colors.black87,
+                              size: 20,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: GestureDetector(
                                 onTap: () async {
-                                  final phone = center['contactInfo'] != null
-                                      ? (center['contactInfo']['phone'] as List?)?.first ?? 'No Phone Provided'
+                                  final phoneNumbers = center['contactInfo'] != null &&
+                                          center['contactInfo']['phone'] != null
+                                      ? (center['contactInfo']['phone'] as List?)?.join(', ') ?? 'No Phone Provided'
                                       : 'No Phone Provided';
-                                  if (phone != 'No Phone Provided') {
-                                    final url = 'tel:$phone';
-                                    if (await canLaunchUrl(Uri.parse(url))) {
-                                      await launchUrl(Uri.parse(url));
+
+                                  if (phoneNumbers != 'No Phone Provided') {
+                                    final phoneNumber = phoneNumbers.split(', ')[0];
+                                    final phoneUri = Uri.parse('tel:$phoneNumber');
+                                    if (await canLaunchUrl(phoneUri)) {
+                                      await launchUrl(phoneUri);
                                     } else {
+                                      await FlutterClipboard.copy(phoneNumbers);
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Could not make a call')),
+                                        const SnackBar(
+                                          content: Text('Phone number copied to clipboard'),
+                                          duration: Duration(seconds: 2),
+                                        ),
                                       );
                                     }
                                   }
                                 },
                                 child: Text(
-                                  center['contactInfo'] != null
+                                  center['contactInfo'] != null &&
+                                          center['contactInfo']['phone'] != null
                                       ? (center['contactInfo']['phone'] as List?)?.join(', ') ?? 'No Phone Provided'
                                       : 'No Phone Provided',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
-                                    color: Colors.blue,
-                                    decoration: TextDecoration.underline,
+                                    color: Colors.black54,
+                                    decoration: center['contactInfo'] != null &&
+                                            center['contactInfo']['phone'] != null &&
+                                            (center['contactInfo']['phone'] as List?)?.isNotEmpty == true
+                                        ? TextDecoration.underline
+                                        : TextDecoration.none,
                                   ),
                                 ),
                               ),
@@ -390,57 +459,70 @@ class _DiagnosticCenterCard extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.language, color: Colors.black54, size: 18),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  final url = center['website'];
-                                  if (url != null && url.isNotEmpty) {
-                                    if (await canLaunchUrl(Uri.parse(url))) {
-                                      await launchUrl(
-                                        Uri.parse(url),
-                                        mode: LaunchMode.externalApplication,
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Could not launch website')),
-                                      );
-                                    }
-                                  }
-                                },
+                        GestureDetector(
+                          onTap: () async {
+                            final url = center['website'];
+                            if (url != null && url.isNotEmpty) {
+                              if (await canLaunchUrl(Uri.parse(url))) {
+                                await launchUrl(
+                                  Uri.parse(url),
+                                  mode: LaunchMode.externalApplication,
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Could not launch website'),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.language,
+                                color: Colors.black87,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
                                 child: Text(
                                   center['website'] ?? 'No Website',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
-                                    color: Colors.blue,
+                                    color: Colors.black54,
                                     decoration: TextDecoration.underline,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                 ),
                               ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.access_time,
+                              color: Colors.black87,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                "Working Hours: ${center['serviceHours'] ?? 'Working Hours Not Available'}",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Working Hours: ${center['workingHours'] ?? 'Mon-Sat: 8 AM - 6 PM, Sun: Closed'}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.black54,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Test Duration: ${_getTestDuration()}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.black54,
-                          ),
-                        ),
+                        ..._buildTestDurationSection(context),
                       ],
                     ),
                   ),
@@ -453,10 +535,45 @@ class _DiagnosticCenterCard extends StatelessWidget {
     );
   }
 
-  String _getTestDuration() {
+  List<Widget> _buildTestDurationSection(BuildContext context) {
+    final testWidgets = _buildTestList(context);
+    if (testWidgets.isEmpty) {
+      return [];
+    }
+
+    return [
+      const SizedBox(height: 8),
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.timer, color: Colors.black87, size: 20),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Test Duration:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                ...testWidgets,
+              ],
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  List<Widget> _buildTestList(BuildContext context) {
     final List<dynamic>? tests = center['tests'] as List<dynamic>?;
     if (tests == null || tests.isEmpty) {
-      return 'N/A';
+      return [];
     }
 
     final filteredTests = tests.where((test) {
@@ -464,9 +581,20 @@ class _DiagnosticCenterCard extends StatelessWidget {
     }).toList();
 
     if (filteredTests.isEmpty) {
-      return 'N/A';
+      return [];
     }
 
-    return filteredTests.first['turnaroundTime']?.toString() ?? 'N/A';
+    return filteredTests.map((test) {
+      if (test['turnaroundTime'] == null) {
+        return const SizedBox.shrink();
+      }
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Text(
+          '${test['name'] ?? 'Unknown Test'}: ${test['turnaroundTime']?.toString() ?? 'N/A'}',
+          style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
+        ),
+      );
+    }).toList();
   }
 }

@@ -22,12 +22,16 @@ class _HospitalLocationState extends State<HospitalLocation> {
   final Logger _logger = Logger();
   bool _isLoading = false;
   List<dynamic> hospitals = [];
+  bool _noHospitalsFound = false;
 
   @override
   void initState() {
     super.initState();
     _checkLocationPermission();
-    _fetchHospitals();
+    // Defer the fetchHospitals call until after the first frame to avoid ScaffoldMessenger errors
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchHospitals();
+    });
   }
 
   Future<void> _checkLocationPermission() async {
@@ -49,6 +53,12 @@ class _HospitalLocationState extends State<HospitalLocation> {
         _showLocationPrompt = false;
         _locationPermissionGranted = true;
       });
+      // Fetch hospitals again if permission is granted during runtime
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _fetchHospitals();
+        });
+      }
     }
   }
 
@@ -59,7 +69,11 @@ class _HospitalLocationState extends State<HospitalLocation> {
         _showLocationPrompt = false;
         _locationPermissionGranted = true;
       });
-      _fetchHospitals();
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _fetchHospitals();
+        });
+      }
     } else if (status.isPermanentlyDenied) {
       _showSettingsDialog();
     }
@@ -89,32 +103,38 @@ class _HospitalLocationState extends State<HospitalLocation> {
   Future<void> _fetchHospitals() async {
     if (!mounted || widget.testNames.isEmpty) return;
 
-    if (!_locationPermissionGranted) {
-      await _checkLocationPermission();
-      if (!_locationPermissionGranted) {
+    setState(() {
+      _isLoading = true;
+      _noHospitalsFound = false;
+      hospitals = [];
+    });
+
+    try {
+      double userLat = 9.0300; // Default to Addis Ababa coordinates
+      double userLon = 38.7400;
+
+      if (_locationPermissionGranted) {
+        final location = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+        userLat = location.latitude;
+        userLon = location.longitude;
+        _logger.i('Using user location: ($userLat, $userLon)');
+      } else {
+        _logger.i('Location permission not granted, using default coordinates (Addis Ababa): ($userLat, $userLon)');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                'Location permission is required to find nearby hospitals',
-              ),
+              content: Text('Please Enable permission for a better experience'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
             ),
           );
         }
-        return;
       }
-    }
 
-    setState(() => _isLoading = true);
-
-    try {
-      final location = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      final double userLat = location.latitude;
-      final double userLon = location.longitude;
       final testsQuery = widget.testNames.join(',');
-      _logger.i('Fetching hospitals with: $testsQuery');
+      _logger.i('API query: test=$testsQuery, userLat=$userLat, userLon=$userLon');
 
       final url =
           'https://mtl-dez3.onrender.com/api/v1/institution/searchByTest?test=$testsQuery&userLat=$userLat&userLon=$userLon';
@@ -124,35 +144,104 @@ class _HospitalLocationState extends State<HospitalLocation> {
         url,
         options: Options(
           headers: {
-            'Authorization': 'Bearer <your_token>',
             'Accept': 'application/json',
           },
         ),
       );
 
+      _logger.i('API response status: ${response.statusCode}');
+      _logger.i('API response data: ${response.data}');
+
       if (response.statusCode == 200) {
         final responseData = response.data;
-        _logger.i('Response data: $responseData');
         if (responseData is Map<String, dynamic> &&
             responseData.containsKey('institutions')) {
           final institutions = responseData['institutions'];
           if (institutions is List) {
-            _logger.i('Institutions: $institutions');
+            _logger.i('Found ${institutions.length} hospitals');
             setState(() {
               hospitals = institutions;
+              _noHospitalsFound = institutions.isEmpty;
             });
+            if (institutions.isEmpty && mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'No hospitals found for "${widget.testNames.join(', ')}" near this location. Try enabling location or a different test.',
+                  ),
+                  backgroundColor: Colors.orange,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
+          } else {
+            _logger.w('Institutions field is not a list: $institutions');
+            setState(() {
+              hospitals = [];
+              _noHospitalsFound = true;
+            });
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Invalid response from server. Try again later.'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+          }
+        } else {
+          _logger.w('Invalid response format: $responseData');
+          setState(() {
+            hospitals = [];
+            _noHospitalsFound = true;
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Invalid response from server. Try again later.'),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 3),
+              ),
+            );
           }
         }
       } else {
         throw Exception(response.data['message'] ?? 'Failed to fetch hospitals');
       }
+    } on DioException catch (e) {
+      _logger.e('Dio error fetching hospitals: ${e.message}');
+      _logger.e('Fetch hospitals response: ${e.response?.data}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.response?.data['message'] ?? 'Network error fetching hospitals: ${e.message}',
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      setState(() {
+        hospitals = [];
+        _noHospitalsFound = true;
+      });
     } catch (e) {
       _logger.e('Error fetching hospitals', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error fetching hospitals: ${e.toString()}')),
+          SnackBar(
+            content: Text('Error fetching hospitals: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
+      setState(() {
+        hospitals = [];
+        _noHospitalsFound = true;
+      });
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -201,7 +290,7 @@ class _HospitalLocationState extends State<HospitalLocation> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Enable location to find nearby medical centers',
+                      'Enable location to get more accurate results',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         color: Colors.black87,
@@ -240,7 +329,21 @@ class _HospitalLocationState extends State<HospitalLocation> {
                           );
                         },
                       )
-                    : const Center(child: Text("No hospitals found")),
+                    : Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            _noHospitalsFound
+                                ? 'No hospitals found for "${widget.testNames.join(', ')}" near this location. Try enabling location or a different test.'
+                                : 'No hospitals loaded.',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              color: Colors.orange,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
           ),
         ],
       ),
@@ -395,7 +498,7 @@ class _DiagnosticCenterCard extends StatelessWidget {
                                   }
                                 },
                                 child: Text(
-                                  'Location',
+                                  center['address'] ?? 'Location not specified',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     color: Colors.black54,

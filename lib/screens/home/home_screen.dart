@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,6 +14,7 @@ import 'package:my_medical_app/screens/locations/hospital_location.dart';
 import 'package:my_medical_app/uplaod/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,7 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = false;
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  Timer? _carouselTimer;
   final Logger _logger = Logger();
   List<dynamic>? _hospitals;
   List<dynamic>? _extractedTests;
@@ -38,7 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> _suggestions = [];
   bool _showSuggestions = false;
 
-  // List of common medical tests for suggestions
   final List<String> _commonTests = [
     "X-Ray",
     "CT-Scan",
@@ -52,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
     "Liver Function Test",
   ];
 
-  // Consistent text style for buttons
   final TextStyle _buttonTextStyle = GoogleFonts.poppins(
     fontSize: 16,
     fontWeight: FontWeight.w600,
@@ -65,7 +64,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _startAutoSlide();
     _checkLocationPermission();
     _searchController.addListener(_updateSuggestions);
   }
@@ -73,7 +71,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _pageController.dispose();
-    _carouselTimer?.cancel();
     _searchController.removeListener(_updateSuggestions);
     _searchController.dispose();
     super.dispose();
@@ -96,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _checkLocationPermission() async {
     final status = await Permission.location.status;
-    
+
     if (status.isDenied) {
       setState(() {
         _showLocationPrompt = true;
@@ -148,22 +145,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _startAutoSlide() {
-    _carouselTimer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
-      if (_currentPage < 1) {
-        _currentPage++;
-      } else {
-        _currentPage = 0;
-      }
-
-      if (_pageController.hasClients) {
-        _pageController.animateToPage(
-          _currentPage,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
+  void _copyNumber() {
+    const phoneNumber = '9040';
+    Clipboard.setData(const ClipboardData(text: phoneNumber));
+    _logger.i('Copied phone number: $phoneNumber');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Phone number 9040 copied to clipboard'),
+          backgroundColor: Colors.teal,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Future<List<dynamic>?> _sendImageToApi(File file) async {
@@ -222,21 +216,19 @@ class _HomeScreenState extends State<HomeScreen> {
         options: options,
       );
 
-      _logger.i('Response status: ${response.statusCode}');
-      _logger.i('Response data: ${response.data}');
+      _logger.i('Upload response status: ${response.statusCode}');
+      _logger.i('Upload response data: ${response.data}');
 
       if ([200, 201, 204].contains(response.statusCode)) {
         final responseData = response.data;
-        
+
         List<dynamic> extractedTests = [];
-        if (responseData is Map<String, dynamic>) {
-          if (responseData.containsKey('uploaded')) {
-            final uploaded = responseData['uploaded'];
-            if (uploaded is Map<String, dynamic> && uploaded.containsKey('tests')) {
-              final tests = uploaded['tests'];
-              if (tests is List) {
-                extractedTests = tests;
-              }
+        if (responseData is Map<String, dynamic> && responseData.containsKey('uploaded')) {
+          final uploaded = responseData['uploaded'];
+          if (uploaded is Map<String, dynamic> && uploaded.containsKey('tests')) {
+            final tests = uploaded['tests'];
+            if (tests is List) {
+              extractedTests = tests;
             }
           }
         }
@@ -256,10 +248,10 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         _logger.i('Extracted tests: $extractedTests');
-        
+
         final hospitals = await _fetchHospitals(extractedTests);
         _logger.i('Fetched hospitals: $hospitals');
-        
+
         if (hospitals != null && hospitals.isNotEmpty) {
           setState(() {
             _hospitals = hospitals;
@@ -276,7 +268,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('No hospitals found for these tests'),
+                content: Text('No hospitals found for these tests. Try enabling location or a different test.'),
                 backgroundColor: Colors.orange,
                 duration: Duration(seconds: 3),
               ),
@@ -297,13 +289,13 @@ class _HomeScreenState extends State<HomeScreen> {
         throw Exception(response.data['message'] ?? 'Upload failed');
       }
     } on DioException catch (e) {
-      _logger.e('Dio error: ${e.message}');
-      _logger.e('Response: ${e.response?.data}');
+      _logger.e('Dio error during upload: ${e.message}');
+      _logger.e('Upload response: ${e.response?.data}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              e.response?.data['message'] ?? 'Network error: ${e.message}',
+              e.response?.data['message'] ?? 'Network error during upload: ${e.message}',
             ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
@@ -315,7 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('Upload error: ${e.toString()}'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
@@ -330,14 +322,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<List<dynamic>?> _fetchHospitals(List<dynamic> extractedTests) async {
-    if (!mounted || extractedTests.isEmpty) return null;
+    if (!mounted || extractedTests.isEmpty) return [];
 
     setState(() => _isLoading = true);
     _logger.i('Fetching hospitals with tests: $extractedTests');
 
     try {
-      double userLat = 0.0;
-      double userLon = 0.0;
+      double userLat = 9.0300; // Default to Addis Ababa coordinates
+      double userLon = 38.7400;
 
       if (_locationPermissionGranted) {
         final location = await Geolocator.getCurrentPosition(
@@ -345,12 +337,13 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         userLat = location.latitude;
         userLon = location.longitude;
+        _logger.i('Using user location: ($userLat, $userLon)');
       } else {
-        _logger.i('Location permission not granted, using default coordinates (0, 0)');
+        _logger.i('Location permission not granted, using default coordinates (Addis Ababa): ($userLat, $userLon)');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Using default location as permission is not granted'),
+              content: Text('Using default location (Addis Ababa) as permission is not granted'),
               backgroundColor: Colors.orange,
               duration: Duration(seconds: 3),
             ),
@@ -359,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       final testsQuery = extractedTests.join(',');
-      _logger.i('Fetching hospitals with: $testsQuery');
+      _logger.i('API query: test=$testsQuery, userLat=$userLat, userLon=$userLon');
 
       final url =
           'https://mtl-dez3.onrender.com/api/v1/institution/searchByTest?test=$testsQuery&userLat=$userLat&userLon=$userLon';
@@ -375,19 +368,42 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
+      _logger.i('Fetch hospitals response status: ${response.statusCode}');
+      _logger.i('Fetch hospitals response data: ${response.data}');
+
       if (response.statusCode == 200) {
         final responseData = response.data;
-        _logger.i('Response data: $responseData');
         if (responseData is Map<String, dynamic> && responseData.containsKey('institutions')) {
           final institutions = responseData['institutions'];
           if (institutions is List) {
+            _logger.i('Found ${institutions.length} hospitals');
             return institutions;
+          } else {
+            _logger.w('Institutions field is not a list: $institutions');
+            return [];
           }
+        } else {
+          _logger.w('Invalid response format: $responseData');
+          return [];
         }
-        throw Exception('Invalid hospitals data format');
       } else {
         throw Exception(response.data['message'] ?? 'Failed to fetch hospitals');
       }
+    } on DioException catch (e) {
+      _logger.e('Dio error fetching hospitals: ${e.message}');
+      _logger.e('Fetch hospitals response: ${e.response?.data}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.response?.data['message'] ?? 'Network error fetching hospitals: ${e.message}',
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return [];
     } catch (e) {
       _logger.e('Error fetching hospitals', error: e);
       if (mounted) {
@@ -398,12 +414,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       }
+      return [];
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
-    return null;
   }
 
   Future<void> _searchHospitals(String query) async {
@@ -430,8 +446,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      double userLat = 0.0;
-      double userLon = 0.0;
+      double userLat = 9.0300; // Default to Addis Ababa coordinates
+      double userLon = 38.7400;
 
       if (_locationPermissionGranted) {
         final location = await Geolocator.getCurrentPosition(
@@ -439,12 +455,13 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         userLat = location.latitude;
         userLon = location.longitude;
+        _logger.i('Using user location: ($userLat, $userLon)');
       } else {
-        _logger.i('Location permission not granted, using default coordinates (0, 0)');
+        _logger.i('Location permission not granted, using default coordinates (Addis Ababa): ($userLat, $userLon)');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Using default location as permission is not granted'),
+              content: Text('Please Enable permission for a better experience'),
               backgroundColor: Colors.orange,
               duration: Duration(seconds: 3),
             ),
@@ -453,7 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       final testsQuery = query;
-      _logger.i('Searching hospitals with: $testsQuery');
+      _logger.i('Search hospitals API query: test=$testsQuery, userLat=$userLat, userLon=$userLon');
 
       final url =
           'https://mtl-dez3.onrender.com/api/v1/institution/searchByTest?test=$testsQuery&userLat=$userLat&userLon=$userLon';
@@ -463,15 +480,16 @@ class _HomeScreenState extends State<HomeScreen> {
         url,
         options: Options(
           headers: {
-            'Authorization': 'Bearer <your_token>',
             'Accept': 'application/json',
           },
         ),
       );
 
+      _logger.i('Search hospitals response status: ${response.statusCode}');
+      _logger.i('Search hospitals response data: ${response.data}');
+
       if (response.statusCode == 200) {
         final responseData = response.data;
-        _logger.i('Response data: $responseData');
         if (responseData is Map<String, dynamic> && responseData.containsKey('institutions')) {
           final institutions = responseData['institutions'];
           if (institutions is List) {
@@ -491,17 +509,58 @@ class _HomeScreenState extends State<HomeScreen> {
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('No hospitals found for this test'),
+                  content: Text('No hospitals found for this test. Try enabling location or a different test.'),
                   backgroundColor: Colors.orange,
                   duration: Duration(seconds: 3),
                 ),
               );
             }
+          } else {
+            setState(() {
+              _noHospitalsFound = true;
+            });
+            _logger.w('Institutions field is not a list: $institutions');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Invalid response from server. Try again later.'),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 3),
+              ),
+            );
           }
+        } else {
+          setState(() {
+            _noHospitalsFound = true;
+          });
+          _logger.w('Invalid response format: $responseData');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Invalid response from server. Try again later.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
         }
       } else {
         throw Exception(response.data['message'] ?? 'Failed to fetch hospitals');
       }
+    } on DioException catch (e) {
+      _logger.e('Dio error searching hospitals: ${e.message}');
+      _logger.e('Search hospitals response: ${e.response?.data}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.response?.data['message'] ?? 'Network error searching hospitals: ${e.message}',
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      setState(() {
+        _noHospitalsFound = true;
+      });
     } catch (e) {
       _logger.e('Error searching hospitals', error: e);
       if (mounted) {
@@ -522,8 +581,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Navigate to a new screen for blood donation locations
   void _findBloodDonationPlaces() {
+    _logger.i('Navigating to HospitalLocation with testNames: ["Blood Donation"]');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -532,8 +591,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Navigate to a new screen for COVID vaccination places
   void _findCovidVaccinationPlaces() {
+    _logger.i('Navigating to HospitalLocation with testNames: ["COVID Vaccination"]');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -542,7 +601,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Reset state to initial screen
   void _resetState() {
     setState(() {
       _hospitals = null;
@@ -556,7 +614,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Handle pull-to-refresh
   Future<void> _onRefresh() async {
     _resetState();
   }
@@ -565,13 +622,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // Dismiss suggestions when tapping outside
         if (_showSuggestions) {
           setState(() {
             _showSuggestions = false;
           });
         }
-        FocusScope.of(context).unfocus(); // Dismiss keyboard
+        FocusScope.of(context).unfocus();
       },
       child: Scaffold(
         backgroundColor: Colors.grey[200],
@@ -587,9 +643,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 50,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'MediMap',
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   color: Colors.teal,
                   fontWeight: FontWeight.bold,
                   fontSize: 25,
@@ -597,6 +653,33 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+          actions: [
+            GestureDetector(
+              onTap: _copyNumber,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                margin: const EdgeInsets.only(right: 16.0),
+                decoration: BoxDecoration(
+                  color: Colors.teal.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.phone, color: Colors.teal, size: 24),
+                    const SizedBox(width: 4),
+                    Text(
+                      '9040',
+                      style: GoogleFonts.poppins(
+                        color: Colors.teal,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
         body: RefreshIndicator(
           onRefresh: _onRefresh,
@@ -716,7 +799,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                         }
                                       },
                                     ),
-                                    // Loading indicator while uploading or searching
                                     if (_isLoading)
                                       Padding(
                                         padding: const EdgeInsets.all(16.0),
@@ -732,7 +814,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      // Suggestions dropdown
                       if (_showSuggestions)
                         Material(
                           elevation: 4,
@@ -769,7 +850,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       const SizedBox(height: 20),
-                      // Upload and Scan buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -809,41 +889,39 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       const SizedBox(height: 25),
-                      // Back button when hospitals or tests are displayed
                       if (_hospitals != null || _extractedTests != null || _noHospitalsFound || _noTestsFound)
-                      // Display extracted tests
-                      if (_extractedTests != null && _extractedTests!.isNotEmpty && !_isLoading)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: Wrap(
-                            spacing: 8,
-                            children: _extractedTests!.map((test) {
-                              return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => HospitalLocation(
-                                        testNames: [test.toString()],
+                        if (_extractedTests != null && _extractedTests!.isNotEmpty && !_isLoading)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: Wrap(
+                              spacing: 8,
+                              children: _extractedTests!.map((test) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    _logger.i('Navigating to HospitalLocation with testNames: [$test]');
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => HospitalLocation(
+                                          testNames: [test.toString()],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Chip(
+                                    label: Text(
+                                      "See more ${test.toString()} Test Areas",
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                  );
-                                },
-                                child: Chip(
-                                  label: Text(
-                                    "See more ${test.toString()} Test Areas",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      color: Colors.white,
-                                    ),
+                                    backgroundColor: Colors.teal,
                                   ),
-                                  backgroundColor: Colors.teal,
-                                ),
-                              );
-                            }).toList(),
+                                );
+                              }).toList(),
+                            ),
                           ),
-                        ),
-                      // Display hospitals
                       if (_hospitals != null && _hospitals!.isNotEmpty && !_isLoading)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -993,12 +1071,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             }).toList(),
                           ),
                         ),
-                      // Display no hospitals found message
                       if (_noHospitalsFound && !_isLoading)
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Text(
-                            'No hospitals found for this test',
+                            'No hospitals found for this test. Try enabling location or a different test.',
                             style: GoogleFonts.poppins(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -1006,7 +1083,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                      // Image preview or carousel
                       if (!_isLoading && (_hospitals == null && _extractedTests == null && !_noHospitalsFound && !_noTestsFound))
                         Column(
                           children: [
@@ -1017,23 +1093,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onPageChanged: (int page) {
                                   setState(() => _currentPage = page);
                                 },
-                                itemCount: 2,
+                                itemCount: 1,
                                 itemBuilder: (context, index) {
-                                  List<String> images = [
-                                    'images/ad.png',
-                                    'images/ad.png',
+                                  List<String> videos = [
+                                    // 'images/ad.mp4',
+                                    'images/ad.mp4',
                                   ];
                                   return Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 8),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
-                                      child: Image.asset(
-                                        images[index],
+                                      child: VideoPlayerWidget(
+                                        videoPath: videos[index],
                                         width: MediaQuery.of(context).size.width * 0.9,
                                         height: 120,
-                                        fit: BoxFit.cover,
+                                        pageController: _pageController,
+                                        currentPage: _currentPage,
+                                        videoIndex: index,
                                       ),
-                                      ),
+                                    ),
                                   );
                                 },
                               ),
@@ -1085,7 +1163,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                       const SizedBox(height: 25),
-                      // Most Searched Section
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -1117,6 +1194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ];
                           return GestureDetector(
                             onTap: () {
+                              _logger.i('Navigating to HospitalLocation with testNames: [${tests[index]["title"]}]');
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -1160,7 +1238,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
                       const SizedBox(height: 25),
-                      // Additional Services Section
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -1245,7 +1322,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Helper method to build action buttons (Upload and Scan)
   Widget _buildActionButton(IconData icon, String label, VoidCallback onTap) {
     return ElevatedButton.icon(
       style: ButtonStyle(
@@ -1274,5 +1350,122 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       onPressed: onTap,
     );
+  }
+}
+
+class VideoPlayerWidget extends StatefulWidget {
+  final String videoPath;
+  final double width;
+  final double height;
+  final PageController pageController;
+  final int currentPage;
+  final int videoIndex;
+
+  const VideoPlayerWidget({
+    Key? key,
+    required this.videoPath,
+    required this.width,
+    required this.height,
+    required this.pageController,
+    required this.currentPage,
+    required this.videoIndex,
+  }) : super(key: key);
+
+  @override
+  _VideoPlayerWidgetState createState() => _VideoPlayerWidgetState();
+}
+
+class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
+  late VideoPlayerController _controller;
+  bool _isInitialized = false;
+  bool _hasSwitched = false;
+  final Logger _logger = Logger();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.asset(widget.videoPath)
+      ..initialize().then((_) {
+        if (mounted) {
+          setState(() {
+            _isInitialized = true;
+          });
+          _controller.setVolume(0.0); // Mute the video
+          _controller.setLooping(false); // Do not loop
+          if (widget.currentPage == widget.videoIndex) {
+            _controller.play();
+            _hasSwitched = false;
+            _logger.i('Playing video ${widget.videoIndex} at path: ${widget.videoPath}, duration: ${_controller.value.duration.inSeconds}s');
+          }
+          _controller.addListener(_videoListener);
+        }
+      });
+  }
+
+  void _videoListener() {
+    if (_isInitialized && _controller.value.isPlaying && !_hasSwitched) {
+      final position = _controller.value.position;
+      final duration = _controller.value.duration;
+      _logger.i('Video ${widget.videoIndex} position: ${position.inSeconds}s, duration: ${duration.inSeconds}s');
+      if (position >= duration && position.inMilliseconds > 0) {
+        _logger.i('Video ${widget.videoIndex} finished playing');
+        if (mounted) {
+          _hasSwitched = true;
+          _controller.pause();
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted && _hasSwitched) {
+              int nextPage = widget.currentPage + 1;
+              if (nextPage >= 2) {
+                nextPage = 0; // Loop back to the first video
+              }
+              _logger.i('Switching to next page: $nextPage after video ${widget.videoIndex}');
+              widget.pageController.animateToPage(
+                nextPage,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+              );
+            }
+          });
+        }
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant VideoPlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentPage == widget.videoIndex && !_controller.value.isPlaying) {
+      _controller.seekTo(Duration.zero);
+      _controller.play();
+      _hasSwitched = false;
+      _logger.i('Resumed and reset video ${widget.videoIndex}');
+    } else if (widget.currentPage != widget.videoIndex && _controller.value.isPlaying) {
+      _controller.pause();
+      _controller.seekTo(Duration.zero);
+      _logger.i('Paused and reset video ${widget.videoIndex} as it is not on the current page');
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_videoListener);
+    _controller.dispose();
+    _logger.i('Disposed video controller for video ${widget.videoIndex}');
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _isInitialized
+        ? SizedBox(
+            width: widget.width,
+            height: widget.height,
+            child: VideoPlayer(_controller),
+          )
+        : SizedBox(
+            width: widget.width,
+            height: widget.height,
+            child: const Center(child: CircularProgressIndicator()),
+          );
   }
 }

@@ -82,21 +82,22 @@ class _HospitalLocationState extends State<HospitalLocation> {
   void _showSettingsDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Permission Required'),
-        content: const Text(
-          'Location permission is permanently denied. Please enable it from app settings.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              openAppSettings();
-            },
-            child: const Text('Open Settings'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Permission Required'),
+            content: const Text(
+              'Location permission is permanently denied. Please enable it from app settings.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  openAppSettings();
+                },
+                child: const Text('Open Settings'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -121,7 +122,9 @@ class _HospitalLocationState extends State<HospitalLocation> {
         userLon = location.longitude;
         _logger.i('Using user location: ($userLat, $userLon)');
       } else {
-        _logger.i('Location permission not granted, using default coordinates (Addis Ababa): ($userLat, $userLon)');
+        _logger.i(
+          'Location permission not granted, using default coordinates (Addis Ababa): ($userLat, $userLon)',
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -134,7 +137,9 @@ class _HospitalLocationState extends State<HospitalLocation> {
       }
 
       final testsQuery = widget.testNames.join(',');
-      _logger.i('API query: test=$testsQuery, userLat=$userLat, userLon=$userLon');
+      _logger.i(
+        'API query: test=$testsQuery, userLat=$userLat, userLon=$userLon',
+      );
 
       final url =
           'https://mtl-dez3.onrender.com/api/v1/institution/searchByTest?test=$testsQuery&userLat=$userLat&userLon=$userLon';
@@ -142,11 +147,7 @@ class _HospitalLocationState extends State<HospitalLocation> {
       final dio = Dio();
       final response = await dio.get(
         url,
-        options: Options(
-          headers: {
-            'Accept': 'application/json',
-          },
-        ),
+        options: Options(headers: {'Accept': 'application/json'}),
       );
 
       _logger.i('API response status: ${response.statusCode}');
@@ -183,7 +184,9 @@ class _HospitalLocationState extends State<HospitalLocation> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Invalid response from server. Try again later.'),
+                  content: Text(
+                    'Invalid response from server. Try again later.',
+                  ),
                   backgroundColor: Colors.red,
                   duration: Duration(seconds: 3),
                 ),
@@ -207,7 +210,9 @@ class _HospitalLocationState extends State<HospitalLocation> {
           }
         }
       } else {
-        throw Exception(response.data['message'] ?? 'Failed to fetch hospitals');
+        throw Exception(
+          response.data['message'] ?? 'Failed to fetch hospitals',
+        );
       }
     } on DioException catch (e) {
       _logger.e('Dio error fetching hospitals: ${e.message}');
@@ -216,7 +221,8 @@ class _HospitalLocationState extends State<HospitalLocation> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              e.response?.data['message'] ?? 'Network error fetching hospitals: ${e.message}',
+              e.response?.data['message'] ??
+                  'Network error fetching hospitals: ${e.message}',
             ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
@@ -260,11 +266,7 @@ class _HospitalLocationState extends State<HospitalLocation> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              'images/L.png',
-              width: 50,
-              height: 50,
-            ),
+            Image.asset('images/L.png', width: 50, height: 50),
             const SizedBox(width: 8),
             Text(
               'MediMap',
@@ -312,38 +314,39 @@ class _HospitalLocationState extends State<HospitalLocation> {
               ),
             ),
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : hospitals.isNotEmpty
+            child:
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : hospitals.isNotEmpty
                     ? ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: hospitals.length,
-                        itemBuilder: (context, index) {
-                          final center = hospitals[index];
-                          if (center is! Map<String, dynamic>) {
-                            return const SizedBox.shrink();
-                          }
-                          return _DiagnosticCenterCard(
-                            center: center,
-                            testNames: widget.testNames,
-                          );
-                        },
-                      )
+                      padding: const EdgeInsets.all(16),
+                      itemCount: hospitals.length,
+                      itemBuilder: (context, index) {
+                        final center = hospitals[index];
+                        if (center is! Map<String, dynamic>) {
+                          return const SizedBox.shrink();
+                        }
+                        return _DiagnosticCenterCard(
+                          center: center,
+                          testNames: widget.testNames,
+                        );
+                      },
+                    )
                     : Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            _noHospitalsFound
-                                ? 'No hospitals found for "${widget.testNames.join(', ')}" near this location. Try enabling location or a different test.'
-                                : 'No hospitals loaded.',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              color: Colors.orange,
-                            ),
-                            textAlign: TextAlign.center,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          _noHospitalsFound
+                              ? 'No hospitals found for "${widget.testNames.join(', ')}" near this location. Try enabling location or a different test.'
+                              : 'No hospitals loaded.',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            color: Colors.orange,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
+                    ),
           ),
         ],
       ),
@@ -405,13 +408,28 @@ class _DiagnosticCenterCard extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(50),
                     child: Center(
-                      child: center['image'] != null
-                          ? Image.network(
-                              center['image'],
-                              width: 70,
-                              height: 70,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
+                      child:
+                          center['image'] != null
+                              ? Image.network(
+                                center['image'],
+                                width: 70,
+                                height: 70,
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (context, error, stackTrace) => Container(
+                                      width: 70,
+                                      height: 70,
+                                      color: const Color(0xFF00796B),
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.local_hospital,
+                                          size: 40,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                              )
+                              : Container(
                                 width: 70,
                                 height: 70,
                                 color: const Color(0xFF00796B),
@@ -423,19 +441,6 @@ class _DiagnosticCenterCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                            )
-                          : Container(
-                              width: 70,
-                              height: 70,
-                              color: const Color(0xFF00796B),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.local_hospital,
-                                  size: 40,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -475,7 +480,6 @@ class _DiagnosticCenterCard extends StatelessWidget {
                             const Icon(
                               Icons.location_on,
                               color: Colors.black87,
-                              size: 20,
                             ),
                             const SizedBox(width: 4),
                             Expanded(
@@ -483,25 +487,31 @@ class _DiagnosticCenterCard extends StatelessWidget {
                                 onTap: () async {
                                   final mapLink = center['location'];
                                   if (mapLink != null && mapLink.isNotEmpty) {
-                                    if (await canLaunchUrl(Uri.parse(mapLink))) {
+                                    if (await canLaunchUrl(
+                                      Uri.parse(mapLink),
+                                    )) {
                                       await launchUrl(
                                         Uri.parse(mapLink),
                                         mode: LaunchMode.externalApplication,
                                       );
                                     } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
-                                          content: Text('Could not open map link'),
+                                          content: Text(
+                                            'Could not open map link',
+                                          ),
                                         ),
                                       );
                                     }
                                   }
                                 },
                                 child: Text(
-                                  center['address'] ?? 'Location not specified',
+                                  'Location',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
-                                    color: Colors.black54,
+                                    color: Colors.grey.shade800,
                                     decoration: TextDecoration.underline,
                                   ),
                                 ),
@@ -521,21 +531,33 @@ class _DiagnosticCenterCard extends StatelessWidget {
                             Expanded(
                               child: GestureDetector(
                                 onTap: () async {
-                                  final phoneNumbers = center['contactInfo'] != null &&
-                                          center['contactInfo']['phone'] != null
-                                      ? (center['contactInfo']['phone'] as List?)?.join(', ') ?? 'No Phone Provided'
-                                      : 'No Phone Provided';
+                                  final phoneNumbers =
+                                      center['contactInfo'] != null &&
+                                              center['contactInfo']['phone'] !=
+                                                  null
+                                          ? (center['contactInfo']['phone']
+                                                      as List?)
+                                                  ?.join(', ') ??
+                                              'No Phone Provided'
+                                          : 'No Phone Provided';
 
                                   if (phoneNumbers != 'No Phone Provided') {
-                                    final phoneNumber = phoneNumbers.split(', ')[0];
-                                    final phoneUri = Uri.parse('tel:$phoneNumber');
+                                    final phoneNumber =
+                                        phoneNumbers.split(', ')[0];
+                                    final phoneUri = Uri.parse(
+                                      'tel:$phoneNumber',
+                                    );
                                     if (await canLaunchUrl(phoneUri)) {
                                       await launchUrl(phoneUri);
                                     } else {
                                       await FlutterClipboard.copy(phoneNumbers);
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
-                                          content: Text('Phone number copied to clipboard'),
+                                          content: Text(
+                                            'Phone number copied to clipboard',
+                                          ),
                                           duration: Duration(seconds: 2),
                                         ),
                                       );
@@ -545,16 +567,24 @@ class _DiagnosticCenterCard extends StatelessWidget {
                                 child: Text(
                                   center['contactInfo'] != null &&
                                           center['contactInfo']['phone'] != null
-                                      ? (center['contactInfo']['phone'] as List?)?.join(', ') ?? 'No Phone Provided'
+                                      ? (center['contactInfo']['phone']
+                                                  as List?)
+                                              ?.join(', ') ??
+                                          'No Phone Provided'
                                       : 'No Phone Provided',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     color: Colors.black54,
-                                    decoration: center['contactInfo'] != null &&
-                                            center['contactInfo']['phone'] != null &&
-                                            (center['contactInfo']['phone'] as List?)?.isNotEmpty == true
-                                        ? TextDecoration.underline
-                                        : TextDecoration.none,
+                                    decoration:
+                                        center['contactInfo'] != null &&
+                                                center['contactInfo']['phone'] !=
+                                                    null &&
+                                                (center['contactInfo']['phone']
+                                                            as List?)
+                                                        ?.isNotEmpty ==
+                                                    true
+                                            ? TextDecoration.underline
+                                            : TextDecoration.none,
                                   ),
                                 ),
                               ),
@@ -679,9 +709,10 @@ class _DiagnosticCenterCard extends StatelessWidget {
       return [];
     }
 
-    final filteredTests = tests.where((test) {
-      return testNames.contains(test['name']);
-    }).toList();
+    final filteredTests =
+        tests.where((test) {
+          return testNames.contains(test['name']);
+        }).toList();
 
     if (filteredTests.isEmpty) {
       return [];

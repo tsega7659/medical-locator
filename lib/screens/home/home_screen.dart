@@ -974,7 +974,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 Icon(Icons.location_on, color: Colors.black87, size: 20),
                                                 const SizedBox(width: 10),
                                                 Text(
-                                                  'Here',
+                                                  'Location',
                                                   style: GoogleFonts.poppins(
                                                     fontSize: 14,
                                                     color: Colors.black54,

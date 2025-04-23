@@ -17,87 +17,82 @@ class HospitalLocation extends StatefulWidget {
 }
 
 class _HospitalLocationState extends State<HospitalLocation> {
-  bool _showLocationPrompt = false;
   bool _locationPermissionGranted = false;
   final Logger _logger = Logger();
   bool _isLoading = false;
   List<dynamic> hospitals = [];
   bool _noHospitalsFound = false;
+  bool _hasAttemptedFetch = false; // Track if fetch has been attempted
 
   @override
   void initState() {
     super.initState();
     _checkLocationPermission();
-    // Defer the fetchHospitals call until after the first frame to avoid ScaffoldMessenger errors
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchHospitals();
-    });
   }
 
   Future<void> _checkLocationPermission() async {
     final status = await Permission.location.status;
 
-    if (status.isDenied) {
-      setState(() {
-        _showLocationPrompt = true;
-        _locationPermissionGranted = false;
-      });
-    } else if (status.isPermanentlyDenied) {
-      _showSettingsDialog();
-      setState(() {
-        _showLocationPrompt = false;
-        _locationPermissionGranted = false;
-      });
-    } else if (status.isGranted) {
-      setState(() {
-        _showLocationPrompt = false;
+    setState(() {
+      if (status.isGranted) {
         _locationPermissionGranted = true;
-      });
-      // Fetch hospitals again if permission is granted during runtime
-      if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _fetchHospitals();
-        });
+      } else if (status.isPermanentlyDenied) {
+        _showSettingsDialog();
+        _locationPermissionGranted = false;
+      } else {
+        _locationPermissionGranted = false;
       }
+    });
+
+    // Fetch hospitals regardless of permission status
+    if (mounted) {
+      _fetchHospitals();
     }
   }
 
   Future<void> _requestLocationPermission() async {
     final status = await Permission.location.request();
-    if (status.isGranted) {
-      setState(() {
-        _showLocationPrompt = false;
+    setState(() {
+      if (status.isGranted) {
         _locationPermissionGranted = true;
-      });
-      if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _fetchHospitals();
-        });
+      } else if (status.isPermanentlyDenied) {
+        _showSettingsDialog();
+        _locationPermissionGranted = false;
+      } else {
+        _locationPermissionGranted = false;
       }
-    } else if (status.isPermanentlyDenied) {
-      _showSettingsDialog();
+    });
+
+    // Fetch hospitals after permission state is updated
+    if (mounted) {
+      _fetchHospitals();
     }
   }
 
   void _showSettingsDialog() {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Permission Required'),
-            content: const Text(
-              'Location permission is permanently denied. Please enable it from app settings.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  openAppSettings();
-                },
-                child: const Text('Open Settings'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Permission Required'),
+        content: const Text(
+          'Location permission is permanently denied. Please enable it from app settings to use your current location.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              openAppSettings();
+            },
+            child: const Text('Open Settings'),
           ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -108,6 +103,7 @@ class _HospitalLocationState extends State<HospitalLocation> {
       _isLoading = true;
       _noHospitalsFound = false;
       hospitals = [];
+      _hasAttemptedFetch = true; // Mark that we've attempted to fetch
     });
 
     try {
@@ -115,25 +111,21 @@ class _HospitalLocationState extends State<HospitalLocation> {
       double userLon = 38.7400;
 
       if (_locationPermissionGranted) {
-        final location = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
-        userLat = location.latitude;
-        userLon = location.longitude;
-        _logger.i('Using user location: ($userLat, $userLon)');
+        try {
+          final location = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+          );
+          userLat = location.latitude;
+          userLon = location.longitude;
+          _logger.i('Using user location: ($userLat, $userLon)');
+        } catch (e) {
+          _logger.w('Failed to get user location: $e');
+          _logger.i('Falling back to default coordinates (Addis Ababa): ($userLat, $userLon)');
+        }
       } else {
         _logger.i(
           'Location permission not granted, using default coordinates (Addis Ababa): ($userLat, $userLon)',
         );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please Enable permission for a better experience'),
-              backgroundColor: Colors.orange,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
       }
 
       final testsQuery = widget.testNames.join(',');
@@ -168,7 +160,7 @@ class _HospitalLocationState extends State<HospitalLocation> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'No hospitals found for "${widget.testNames.join(', ')}" near this location. Try enabling location or a different test.',
+                    'No hospitals found for "${widget.testNames.join(', ')}" near this location.',
                   ),
                   backgroundColor: Colors.orange,
                   duration: const Duration(seconds: 3),
@@ -185,7 +177,7 @@ class _HospitalLocationState extends State<HospitalLocation> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text(
-                    'Invalid response from server. Try again later.',
+                    'Invalid response from server: Institutions field is not a list.',
                   ),
                   backgroundColor: Colors.red,
                   duration: Duration(seconds: 3),
@@ -202,7 +194,7 @@ class _HospitalLocationState extends State<HospitalLocation> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Invalid response from server. Try again later.'),
+                content: Text('Invalid response format from server.'),
                 backgroundColor: Colors.red,
                 duration: Duration(seconds: 3),
               ),
@@ -282,71 +274,41 @@ class _HospitalLocationState extends State<HospitalLocation> {
       ),
       body: Column(
         children: [
-          if (_showLocationPrompt)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.teal[50],
-              child: Row(
-                children: [
-                  const Icon(Icons.location_on, color: Colors.teal),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Enable location to get more accurate results',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _requestLocationPermission,
-                    child: Text(
-                      'Enable',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.teal,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           Expanded(
-            child:
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : hospitals.isNotEmpty
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : hospitals.isNotEmpty
                     ? ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: hospitals.length,
-                      itemBuilder: (context, index) {
-                        final center = hospitals[index];
-                        if (center is! Map<String, dynamic>) {
-                          return const SizedBox.shrink();
-                        }
-                        return _DiagnosticCenterCard(
-                          center: center,
-                          testNames: widget.testNames,
-                        );
-                      },
-                    )
+                        padding: const EdgeInsets.all(16),
+                        itemCount: hospitals.length,
+                        itemBuilder: (context, index) {
+                          final center = hospitals[index];
+                          if (center is! Map<String, dynamic>) {
+                            return const SizedBox.shrink();
+                          }
+                          return _DiagnosticCenterCard(
+                            center: center,
+                            testNames: widget.testNames,
+                          );
+                        },
+                      )
                     : Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          _noHospitalsFound
-                              ? 'No hospitals found for "${widget.testNames.join(', ')}" near this location. Try enabling location or a different test.'
-                              : 'No hospitals loaded.',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            color: Colors.orange,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            _hasAttemptedFetch
+                                ? _noHospitalsFound
+                                    ? 'No hospitals found for "${widget.testNames.join(', ')}" near this location.'
+                                    : 'No hospitals available.'
+                                : 'Loading hospitals...',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              color: Colors.orange,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
                         ),
                       ),
-                    ),
           ),
         ],
       ),
@@ -408,28 +370,14 @@ class _DiagnosticCenterCard extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(50),
                     child: Center(
-                      child:
-                          center['image'] != null
-                              ? Image.network(
-                                center['image'],
-                                width: 70,
-                                height: 70,
-                                fit: BoxFit.cover,
-                                errorBuilder:
-                                    (context, error, stackTrace) => Container(
-                                      width: 70,
-                                      height: 70,
-                                      color: const Color(0xFF00796B),
-                                      child: const Center(
-                                        child: Icon(
-                                          Icons.local_hospital,
-                                          size: 40,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                              )
-                              : Container(
+                      child: center['image'] != null
+                          ? Image.network(
+                              center['image'],
+                              width: 70,
+                              height: 70,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
                                 width: 70,
                                 height: 70,
                                 color: const Color(0xFF00796B),
@@ -441,6 +389,19 @@ class _DiagnosticCenterCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                            )
+                          : Container(
+                              width: 70,
+                              height: 70,
+                              color: const Color(0xFF00796B),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.local_hospital,
+                                  size: 40,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -465,11 +426,14 @@ class _DiagnosticCenterCard extends StatelessWidget {
                               size: 20,
                             ),
                             const SizedBox(width: 4),
-                            Text(
-                              'Hospital',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: Colors.black54,
+                            Expanded(
+                              child: Text(
+                                center['serviceType'] ?? 'Unknown Service',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.black54,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -536,8 +500,12 @@ class _DiagnosticCenterCard extends StatelessWidget {
                                               center['contactInfo']['phone'] !=
                                                   null
                                           ? (center['contactInfo']['phone']
-                                                      as List?)
-                                                  ?.join(', ') ??
+                                                  as List?)
+                                              ?.map((phone) => phone
+                                                      .startsWith('+251')
+                                                  ? phone
+                                                  : '+251 $phone')
+                                              .join(', ') ??
                                               'No Phone Provided'
                                           : 'No Phone Provided';
 
@@ -550,7 +518,8 @@ class _DiagnosticCenterCard extends StatelessWidget {
                                     if (await canLaunchUrl(phoneUri)) {
                                       await launchUrl(phoneUri);
                                     } else {
-                                      await FlutterClipboard.copy(phoneNumbers);
+                                      await FlutterClipboard.copy(
+                                          phoneNumbers);
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -568,23 +537,26 @@ class _DiagnosticCenterCard extends StatelessWidget {
                                   center['contactInfo'] != null &&
                                           center['contactInfo']['phone'] != null
                                       ? (center['contactInfo']['phone']
-                                                  as List?)
-                                              ?.join(', ') ??
+                                              as List?)
+                                          ?.map((phone) =>
+                                              phone.startsWith('+251')
+                                                  ? phone
+                                                  : '+251 $phone')
+                                          .join(', ') ??
                                           'No Phone Provided'
                                       : 'No Phone Provided',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     color: Colors.black54,
-                                    decoration:
-                                        center['contactInfo'] != null &&
-                                                center['contactInfo']['phone'] !=
-                                                    null &&
-                                                (center['contactInfo']['phone']
-                                                            as List?)
-                                                        ?.isNotEmpty ==
-                                                    true
-                                            ? TextDecoration.underline
-                                            : TextDecoration.none,
+                                    decoration: center['contactInfo'] != null &&
+                                            center['contactInfo']['phone'] !=
+                                                null &&
+                                            (center['contactInfo']['phone']
+                                                    as List?)
+                                                ?.isNotEmpty ==
+                                                true
+                                        ? TextDecoration.underline
+                                        : TextDecoration.none,
                                   ),
                                 ),
                               ),
@@ -602,9 +574,12 @@ class _DiagnosticCenterCard extends StatelessWidget {
                                   mode: LaunchMode.externalApplication,
                                 );
                               } else {
+                                await FlutterClipboard.copy(url);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Could not launch website'),
+                                    content: Text(
+                                      'URL copied to clipboard.',
+                                    ),
                                   ),
                                 );
                               }
@@ -709,10 +684,9 @@ class _DiagnosticCenterCard extends StatelessWidget {
       return [];
     }
 
-    final filteredTests =
-        tests.where((test) {
-          return testNames.contains(test['name']);
-        }).toList();
+    final filteredTests = tests.where((test) {
+      return testNames.contains(test['name']);
+    }).toList();
 
     if (filteredTests.isEmpty) {
       return [];

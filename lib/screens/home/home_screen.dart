@@ -720,597 +720,722 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  child: Stack(
                     children: [
-                      Stack(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Positioned.fill(
-                            top: 10,
-                            child: Opacity(
-                              opacity: 0.3,
-                              child: Image.asset(
-                                'images/L.png',
-                                width: 250,
-                                height: 250,
-                              ),
-                            ),
-                          ),
-                          Column(
+                          Stack(
                             children: [
-                              const SizedBox(height: 30),
-                              Text(
-                                'Find Nearby Medical Test Centers Easily',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF00796B),
+                              Positioned.fill(
+                                top: 10,
+                                child: Opacity(
+                                  opacity: 0.3,
+                                  child: Image.asset(
+                                    'images/L.png',
+                                    width: 250,
+                                    height: 250,
+                                  ),
                                 ),
-                                textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Search for medical tests or scan your request paper',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.normal,
-                                  color: Colors.black54,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 20),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(25),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Colors.black12,
-                                      blurRadius: 5,
-                                      offset: Offset(0, 2),
+                              Column(
+                                children: [
+                                  const SizedBox(height: 30),
+                                  Text(
+                                    'Find Nearby Medical Test Centers Easily',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF00796B),
                                     ),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: [
-                                    TextField(
-                                      controller: _searchController,
-                                      maxLength: 50,
-                                      decoration: InputDecoration(
-                                        prefixIcon: GestureDetector(
-                                          onTap: () {
-                                            if (_searchController.text.isNotEmpty) {
-                                              _searchHospitals(_searchController.text.trim());
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Search for medical tests or scan your request paper',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.normal,
+                                      color: Colors.black54,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(25),
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: Colors.black12,
+                                          blurRadius: 5,
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        TextField(
+                                          controller: _searchController,
+                                          maxLength: 50,
+                                          decoration: InputDecoration(
+                                            prefixIcon: GestureDetector(
+                                              onTap: () {
+                                                if (_searchController.text.isNotEmpty) {
+                                                  _searchHospitals(_searchController.text.trim());
+                                                }
+                                              },
+                                              child: const Icon(Icons.search, color: Colors.grey),
+                                            ),
+                                            hintText: "Search here",
+                                            border: InputBorder.none,
+                                            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                                            counterText: "",
+                                          ),
+                                          onChanged: (value) {
+                                            _updateSuggestions();
+                                          },
+                                          onSubmitted: (value) {
+                                            if (value.isNotEmpty) {
+                                              _searchHospitals(value.trim());
                                             }
                                           },
-                                          child: const Icon(Icons.search, color: Colors.grey),
                                         ),
-                                        hintText: "Search here",
-                                        border: InputBorder.none,
-                                        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                                        counterText: "",
-                                      ),
-                                      onChanged: (value) {
-                                        _updateSuggestions();
-                                      },
-                                      onSubmitted: (value) {
-                                        if (value.isNotEmpty) {
-                                          _searchHospitals(value.trim());
-                                        }
-                                      },
+                                        if (_isLoading)
+                                          Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: SpinKitSpinningLines(
+                                              color: const Color(0xFF00796B),
+                                              size: 50,
+                                            ),
+                                          ),
+                                      ],
                                     ),
-                                    if (_isLoading)
-                                      Padding(
-                                        padding: const EdgeInsets.all(16.0),
-                                        child: SpinKitSpinningLines(
-                                          color: const Color(0xFF00796B),
-                                          size: 50,
-                                        ),
-                                      ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                      if (_showSuggestions)
-                        Material(
-                          elevation: 4,
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            constraints: const BoxConstraints(maxHeight: 200),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              itemCount: _suggestions.length,
-                              itemBuilder: (context, index) {
-                                return ListTile(
-                                  title: Text(
-                                    _suggestions[index],
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  onTap: () {
+                          const SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildActionButton(
+                                Icons.file_upload,
+                                "Upload Image",
+                                () async {
+                                  final picked = await MyImagePicker().pickFromGallery();
+                                  if (picked != null) {
                                     setState(() {
-                                      _searchController.text = _suggestions[index];
-                                      _showSuggestions = false;
+                                      imagePicked = picked;
+                                      _hospitals = null;
+                                      _extractedTests = null;
+                                      _noHospitalsFound = false;
                                     });
-                                    _searchHospitals(_suggestions[index]);
-                                  },
-                                );
-                              },
-                            ),
+                                    await _sendImageToApi(File(picked.path));
+                                  }
+                                },
+                              ),
+                              const SizedBox(width: 15),
+                              _buildActionButton(
+                                Icons.document_scanner,
+                                "Scan Image",
+                                () async {
+                                  final picked = await MyImagePicker().pickFromCamera();
+                                  if (picked != null) {
+                                    setState(() {
+                                      imagePicked = picked;
+                                      _hospitals = null;
+                                      _extractedTests = null;
+                                      _noHospitalsFound = false;
+                                    });
+                                    await _sendImageToApi(File(picked.path));
+                                  }
+                                },
+                              ),
+                            ],
                           ),
-                        ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildActionButton(
-                            Icons.file_upload,
-                            "Upload Image",
-                            () async {
-                              final picked = await MyImagePicker().pickFromGallery();
-                              if (picked != null) {
-                                setState(() {
-                                  imagePicked = picked;
-                                  _hospitals = null;
-                                  _extractedTests = null;
-                                  _noHospitalsFound = false;
-                                });
-                                await _sendImageToApi(File(picked.path));
-                              }
-                            },
-                          ),
-                          const SizedBox(width: 15),
-                          _buildActionButton(
-                            Icons.document_scanner,
-                            "Scan Image",
-                            () async {
-                              final picked = await MyImagePicker().pickFromCamera();
-                              if (picked != null) {
-                                setState(() {
-                                  imagePicked = picked;
-                                  _hospitals = null;
-                                  _extractedTests = null;
-                                  _noHospitalsFound = false;
-                                });
-                                await _sendImageToApi(File(picked.path));
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 25),
-                      if (_hospitals != null || _extractedTests != null || _noHospitalsFound || _noTestsFound)
-                        if (_extractedTests != null && _extractedTests!.isNotEmpty && !_isLoading)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Wrap(
-                              spacing: 8,
-                              children: _extractedTests!.map((test) {
-                                return GestureDetector(
-                                  onTap: () {
-                                    _logger.i('Navigating to HospitalLocation with testNames: [$test]');
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => HospitalLocation(
-                                          testNames: [test.toString()],
+                          const SizedBox(height: 25),
+                          if (_hospitals != null || _extractedTests != null || _noHospitalsFound || _noTestsFound)
+                            if (_extractedTests != null && _extractedTests!.isNotEmpty && !_isLoading)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 10),
+                                child: Wrap(
+                                  spacing: 8,
+                                  children: _extractedTests!.map((test) {
+                                    return GestureDetector(
+                                      onTap: () {
+                                        _logger.i('Navigating to HospitalLocation with testNames: [$test]');
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => HospitalLocation(
+                                              testNames: [test.toString()],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: Chip(
+                                        label: Text(
+                                          "See more ${test.toString()} Test Areas",
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                          ),
                                         ),
+                                        backgroundColor: Colors.teal,
                                       ),
                                     );
-                                  },
-                                  child: Chip(
-                                    label: Text(
-                                      "See more ${test.toString()} Test Areas",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    backgroundColor: Colors.teal,
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                      if (_hospitals != null && _hospitals!.isNotEmpty && !_isLoading)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: _hospitals!.map((hospital) {
-                              return Card(
-                                margin: const EdgeInsets.symmetric(vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  }).toList(),
                                 ),
-                                elevation: 5,
-                                shadowColor: Colors.black26,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black12.withOpacity(0.1),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 5),
+                              ),
+                          if (_hospitals != null && _hospitals!.isNotEmpty && !_isLoading)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: _hospitals!.map((hospital) {
+                                  return Card(
+                                    margin: const EdgeInsets.symmetric(vertical:0),
+                                    shape: RoundedRectangleBorder(
+                                      side: BorderSide(color: Colors.grey.shade300, width: 1),
+                                    ),
+                                    elevation: 5,
+                                    shadowColor: Colors.black26,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                    ],
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          hospital['name'] ?? 'Unknown Hospital',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF00796B),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        if (hospital['location'] != null)
-                                          GestureDetector(
-                                            onTap: () async {
-                                              final url = hospital['location'];
-                                              if (await canLaunchUrl(Uri.parse(url))) {
-                                                await launchUrl(Uri.parse(url));
-                                              }
-                                            },
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.location_on, color: Colors.black87, size: 20),
-                                                const SizedBox(width: 10),
-                                                Text(
-                                                  'Location',
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: 14,
-                                                    color: Colors.black54,
-                                                    decoration: TextDecoration.underline,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        const SizedBox(height: 3),
-                                        if (hospital['website'] != null)
-                                          GestureDetector(
-                                            onTap: () async {
-                                              final website = hospital['website'];
-                                              if (website is String && Uri.tryParse(website)?.hasAbsolutePath == true) {
-                                                final url = Uri.parse(website);
-                                                if (await canLaunchUrl(url)) {
-                                                  await launchUrl(
-                                                    url,
-                                                    mode: LaunchMode.externalApplication,
-                                                  );
-                                                } else {
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text('Could not launch website'),
-                                                    ),
-                                                  );
-                                                }
-                                              } else {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text('Invalid website URL'),
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                            child: Row(
-                                              children: [
-                                                const Icon(Icons.public, color: Colors.black87, size: 20),
-                                                const SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Text(
-                                                    hospital['website'],
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: 14,
-                                                      decoration: TextDecoration.underline,
-                                                      color: Colors.black54,
-                                                    ),
-                                                    maxLines: 2,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        const SizedBox(height: 3),
-                                        if (hospital['contactInfo'] != null)
-                                          Row(
-                                            children: [
-                                              const Icon(Icons.phone, color: Colors.black87, size: 20),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Text(
-                                                  (hospital['contactInfo']['phone'] as List?)?.join(', ') ?? 'No phone available',
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: 14,
-                                                    color: Colors.black54,
-                                                  ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(12.0),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            // Circular Logo
+                                            Container(
+                                              width: 50,
+                                              height: 50,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(color: Colors.teal, width: 2),
+                                                image: DecorationImage(
+                                                  image: NetworkImage(hospital['image'] ?? ''),
+                                                  fit: BoxFit.cover,
+                                                  onError: (exception, stackTrace) {
+                                                    // Fallback to a default image if the network image fails to load
+                                                    // return const AssetImage('images/L.png');
+                                                  },
                                                 ),
                                               ),
-                                            ],
-                                          ),
-                                        const SizedBox(height: 3),
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.timer, color: Colors.black87, size: 20),
-                                            const SizedBox(width: 10),
+                                            ),
+                                            const SizedBox(width: 12),
                                             Expanded(
-                                              child: Text(
-                                                'Turnaround Time: ${hospital['turnaroundTime'] ?? 'Not specified'}',
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 14,
-                                                  color: Colors.black54,
-                                                ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                
+                                                children: [
+                                                  const SizedBox(height: 7),
+                                                  Text(
+                                                    hospital['name'] ?? 'Unknown Hospital',
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                    const SizedBox(height: 9),
+                                                    Row(
+                                                    children: [
+                                                      const Icon(Icons.local_hospital, color: Colors.black87, size: 16),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                      hospital['serviceType'] ?? 'Imaging Center',
+                                                      style: GoogleFonts.poppins(
+                                                        fontSize: 15,
+                                                        fontWeight: FontWeight.w400,
+                                                        color: Colors.black54,
+                                                      ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                    GestureDetector(
+                                                    onTap: () async {
+                                                      final mapUrl = hospital['location'];
+                                                      if (mapUrl != null && mapUrl is String) {
+                                                      if (await canLaunchUrl(Uri.parse(mapUrl))) {
+                                                        await launchUrl(Uri.parse(mapUrl), mode: LaunchMode.externalApplication);
+                                                      } else {
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text('Could not open location in maps'),
+                                                        ),
+                                                        );
+                                                      }
+                                                      }
+                                                    },
+                                                    child: Row(
+                                                      children: [
+                                                      const Icon(Icons.location_on, color: Colors.black87, size: 16),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        'Location',
+                                                        style: GoogleFonts.poppins(
+                                                        fontSize: 15,
+                                                        color: Colors.black54,
+                                                        ),
+                                                      ),
+                                                      ],
+                                                    ),
+                                                    ),
+                                                  const SizedBox(height: 4),
+                                                  GestureDetector(
+                                                    onTap: () async {
+                                                      final phone = hospital['contactInfo']?['phone']?.isNotEmpty ?? false
+                                                          ? hospital['contactInfo']['phone'][0]
+                                                          : null;
+                                                      if (phone != null) {
+                                                        final url = 'tel:+251$phone';
+                                                        if (await canLaunchUrl(Uri.parse(url))) {
+                                                          await launchUrl(Uri.parse(url));
+                                                        } else {
+                                                          if (mounted) {
+                                                            ScaffoldMessenger.of(context).showSnackBar(
+                                                              const SnackBar(
+                                                                content: Text(' Phone number copied to clipboard.'),
+                                                              ),
+                                                            );
+                                                          }
+                                                          Clipboard.setData(ClipboardData(text: '+251$phone'));
+                                                        }
+                                                      }
+                                                    },
+                                                    child: Row(
+                                                      children: [
+                                                        const Icon(Icons.phone, color: Colors.black87, size: 16),
+                                                        const SizedBox(width: 4),
+                                                        if (hospital['contactInfo']?['phone']?.isNotEmpty ?? false)
+                                                          Text(
+                                                            '+251 ${hospital['contactInfo']['phone'][0]}',
+                                                            style: GoogleFonts.poppins(
+                                                              fontSize: 15,
+                                                              color: Colors.black54,
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                    if (hospital['website'] != null)
+                                                    GestureDetector(
+                                                      onTap: () async {
+                                                      final website = hospital['website'];
+                                                      if (website is String && Uri.tryParse(website)?.isAbsolute == true) {
+                                                        final url = Uri.parse(website);
+                                                        if (await canLaunchUrl(url)) {
+                                                        await launchUrl(
+                                                          url,
+                                                          mode: LaunchMode.externalApplication,
+                                                        );
+                                                        } else {
+                                                        Clipboard.setData(ClipboardData(text: website));
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          const SnackBar(
+                                                          content: Text('URL copied to clipboard.'),
+                                                          ),
+                                                        );
+                                                        }
+                                                      } else {
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text('Invalid website URL'),
+                                                        ),
+                                                        );
+                                                      }
+                                                      },
+
+                                                      child: Row(
+                                                        children: [
+                                                          const Icon(Icons.public, color: Colors.black87, size: 16),
+                                                          const SizedBox(width: 4),
+                                                          Expanded(
+                                                            child: Text(
+                                                              hospital['website'],
+                                                              style: GoogleFonts.poppins(
+                                                                fontSize: 15,
+                                                                color: Colors.black54,
+                                                              ),
+                                                              maxLines: 1,
+                                                              overflow: TextOverflow.ellipsis,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  const SizedBox(height: 8),
+                                                  Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Row(
+                                                        children: [
+                                                          const Icon(Icons.access_time, color: Colors.black87, size: 16),
+                                                          const SizedBox(width: 4),
+                                                          Text(
+                                                          'Working Hours:',
+                                                          style: GoogleFonts.poppins(
+                                                            fontSize: 15,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: Colors.black87,
+                                                          ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        hospital['workingHours'] ?? 'Mon - Sun, 7am - 10pm',
+                                                        style: GoogleFonts.poppins(
+                                                          fontSize: 15,
+                                                          color: Colors.black54,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Row(
+                                                        children: [
+                                                          const Icon(Icons.timer, color: Colors.black87, size: 16),
+                                                          const SizedBox(width: 4),
+                                                          Text(
+                                                            'Test Duration:',
+                                                            style: GoogleFonts.poppins(
+                                                              fontSize: 15,
+                                                              fontWeight: FontWeight.bold,
+                                                              color: Colors.black87,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        hospital['turnaroundTime'] ?? '48 hr',
+                                                        style: GoogleFonts.poppins(
+                                                          fontSize: 12,
+                                                          color: Colors.black54,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      if (_noHospitalsFound && !_isLoading)
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text(
-                            'No hospitals found for this test. Try enabling location or a different test.',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.orange,
-                            ),
-                          ),
-                        ),
-                      if (!_isLoading && (_hospitals == null && _extractedTests == null && !_noHospitalsFound && !_noTestsFound))
-                        Column(
-                          children: [
-                            SizedBox(
-                              height: 120,
-                              child: PageView.builder(
-                                controller: _pageController,
-                                onPageChanged: (int page) {
-                                  setState(() => _currentPage = page);
-                                },
-                                itemCount: 1,
-                                itemBuilder: (context, index) {
-                                  List<String> videos = [
-                                    // 'images/ad.mp4',
-                                    'images/ad.mp4',
-                                  ];
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: VideoPlayerWidget(
-                                        videoPath: videos[index],
-                                        width: MediaQuery.of(context).size.width * 0.9,
-                                        height: 120,
-                                        pageController: _pageController,
-                                        currentPage: _currentPage,
-                                        videoIndex: index,
                                       ),
                                     ),
                                   );
-                                },
+                                }).toList(),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(2, (index) {
-                                return Container(
-                                  width: 8,
-                                  height: 8,
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: _currentPage == index
-                                        ? const Color(0xFF00796B)
-                                        : Colors.grey.withOpacity(0.4),
-                                  ),
-                                );
-                              }),
-                            ),
-                          ],
-                        )
-                      else if (imagePicked != null && !_isLoading && !_noHospitalsFound)
-                        Column(
-                          children: [
-                            const SizedBox(height: 20),
-                            Text(
-                              _noTestsFound
-                                  ? "No tests found in document"
-                                  : "Image Uploaded Successfully",
-                              style: GoogleFonts.poppins(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: _noTestsFound ? Colors.red : const Color(0xFF00796B),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Container(
-                              height: 320,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                image: DecorationImage(
-                                  image: FileImage(File(imagePicked!.path)),
-                                  fit: BoxFit.cover,
+                          if (_noHospitalsFound && !_isLoading)
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                'No hospitals found for this test. Try enabling location or a different test.',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.orange,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      const SizedBox(height: 25),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "Most Searched",
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF00796B),
+                          if (!_isLoading && (_hospitals == null && _extractedTests == null && !_noHospitalsFound && !_noTestsFound))
+                            Column(
+                              children: [
+                                SizedBox(
+                                  height: 120,
+                                  child: PageView.builder(
+                                    controller: _pageController,
+                                    onPageChanged: (int page) {
+                                      setState(() => _currentPage = page);
+                                    },
+                                    itemCount: 1,
+                                    itemBuilder: (context, index) {
+                                      List<String> videos = [
+                                        'images/ad.mp4',
+                                      ];
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(12),
+                                          child: VideoPlayerWidget(
+                                            videoPath: videos[index],
+                                            width: MediaQuery.of(context).size.width * 0.9,
+                                            height: 120,
+                                            pageController: _pageController,
+                                            currentPage: _currentPage,
+                                            videoIndex: index,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: List.generate(2, (index) {
+                                    return Container(
+                                      width: 8,
+                                      height: 8,
+                                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: _currentPage == index
+                                            ? const Color(0xFF00796B)
+                                            : Colors.grey.withOpacity(0.4),
+                                      ),
+                                    );
+                                  }),
+                                ),
+                              ],
+                            )
+                          else if (imagePicked != null && !_isLoading && !_noHospitalsFound)
+                            Column(
+                              children: [
+                                const SizedBox(height: 20),
+                                Text(
+                                  _noTestsFound
+                                      ? "No tests found in document"
+                                      : "Image Uploaded Successfully",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: _noTestsFound ? Colors.red : const Color(0xFF00796B),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  height: 320,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    image: DecorationImage(
+                                      image: FileImage(File(imagePicked!.path)),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          const SizedBox(height: 25),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              "Most Searched",
+                              style: GoogleFonts.poppins(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF00796B),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: 4,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 3,
-                          crossAxisSpacing: 15,
-                          mainAxisSpacing: 15,
-                        ),
-                        itemBuilder: (context, index) {
-                          List<Map<String, dynamic>> tests = [
-                            {"title": "X-Ray", "icon": Icons.medical_services},
-                            {"title": "CT-Scan", "icon": Icons.scanner},
-                            {"title": "MRI", "icon": Icons.medical_services},
-                            {"title": "Blood Group", "icon": Icons.bloodtype},
-                          ];
-                          return GestureDetector(
-                            onTap: () {
-                              _logger.i('Navigating to HospitalLocation with testNames: [${tests[index]["title"]}]');
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => HospitalLocation(testNames: [tests[index]["title"]]),
+                          const SizedBox(height: 15),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: 4,
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 3,
+                              crossAxisSpacing: 15,
+                              mainAxisSpacing: 15,
+                            ),
+                            itemBuilder: (context, index) {
+                              List<Map<String, dynamic>> tests = [
+                                {"title": "X-Ray", "icon": Icons.medical_services},
+                                {"title": "CT-Scan", "icon": Icons.scanner},
+                                {"title": "MRI", "icon": Icons.medical_services},
+                                {"title": "Blood Group", "icon": Icons.bloodtype},
+                              ];
+                              return GestureDetector(
+                                onTap: () {
+                                  _logger.i('Navigating to HospitalLocation with testNames: [${tests[index]["title"]}]');
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => HospitalLocation(testNames: [tests[index]["title"]]),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey.shade300),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black12.withOpacity(0.1),
+                                        blurRadius: 5,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        tests[index]["icon"],
+                                        color: const Color(0xFF00796B),
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Flexible(
+                                        child: Text(
+                                          tests[index]["title"],
+                                          style: _buttonTextStyle,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
                             },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade300),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black12.withOpacity(0.1),
-                                    blurRadius: 5,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    tests[index]["icon"],
-                                    color: const Color(0xFF00796B),
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Flexible(
-                                    child: Text(
-                                      tests[index]["title"],
-                                      style: _buttonTextStyle,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
+                          ),
+                          const SizedBox(height: 25),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              "Additional Services",
+                              style: GoogleFonts.poppins(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF00796B),
                               ),
                             ),
-                          );
-                        },
+                          ),
+                          const SizedBox(height: 15),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: 2,
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 3,
+                              crossAxisSpacing: 15,
+                              mainAxisSpacing: 15,
+                            ),
+                            itemBuilder: (context, index) {
+                              List<Map<String, dynamic>> services = [
+                                {
+                                  "title": "Blood Donations",
+                                  "icon": Icons.local_hospital,
+                                  "onTap": _findBloodDonationPlaces,
+                                },
+                                {
+                                  "title": "COVID Vaccination",
+                                  "icon": Icons.vaccines,
+                                  "onTap": _findCovidVaccinationPlaces,
+                                },
+                              ];
+                              return GestureDetector(
+                                onTap: services[index]["onTap"],
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey.shade300),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black12.withOpacity(0.1),
+                                        blurRadius: 5,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        services[index]["icon"],
+                                        color: const Color(0xFF00796B),
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Flexible(
+                                        child: Text(
+                                          services[index]["title"],
+                                          style: _buttonTextStyle,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+ const SizedBox(height: 30),
+                        ],
                       ),
-                      const SizedBox(height: 25),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "Additional Services",
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF00796B),
+                      if (_showSuggestions)
+                        Positioned(
+                          left: 20,
+                          right: 20,
+                          top: 230,
+                          child: AnimatedOpacity(
+                            opacity: _showSuggestions ? 1.0 : 0.0,
+                            duration: const Duration(milliseconds: 200),
+                            child: Material(
+                              elevation: 8,
+                              borderRadius: BorderRadius.circular(12),
+                              shadowColor: Colors.black.withOpacity(0.1),
+                              child: Container(
+                                constraints: const BoxConstraints(maxHeight: 200),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.grey.shade200, width: 1),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: ListView.separated(
+                                    shrinkWrap: true,
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    itemCount: _suggestions.length,
+                                    separatorBuilder: (context, index) => Divider(
+                                      height: 1,
+                                      color: Colors.grey.shade200,
+                                      indent: 16,
+                                      endIndent: 16,
+                                    ),
+                                    itemBuilder: (context, index) {
+                                      return InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            _searchController.text = _suggestions[index];
+                                            _showSuggestions = false;
+                                          });
+                                          _searchHospitals(_suggestions[index]);
+                                        },
+                                        hoverColor: Colors.teal.withOpacity(0.1),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                          child: Text(
+                                            _suggestions[index],
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 15),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: 2,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 3,
-                          crossAxisSpacing: 15,
-                          mainAxisSpacing: 15,
-                        ),
-                        itemBuilder: (context, index) {
-                          List<Map<String, dynamic>> services = [
-                            {
-                              "title": "Blood Donations",
-                              "icon": Icons.local_hospital,
-                              "onTap": _findBloodDonationPlaces,
-                            },
-                            {
-                              "title": "COVID Vaccination",
-                              "icon": Icons.vaccines,
-                              "onTap": _findCovidVaccinationPlaces,
-                            },
-                          ];
-                          return GestureDetector(
-                            onTap: services[index]["onTap"],
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade300),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black12.withOpacity(0.1),
-                                    blurRadius: 5,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    services[index]["icon"],
-                                    color: const Color(0xFF00796B),
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Flexible(
-                                    child: Text(
-                                      services[index]["title"],
-                                      style: _buttonTextStyle,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 30),
                     ],
                   ),
                 ),

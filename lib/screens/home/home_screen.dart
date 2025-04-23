@@ -9,9 +9,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:logger/logger.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:medimap/screens/locations/hospital_location.dart';
+import 'package:medimap/uplaod/image_picker.dart';
 import 'package:mime/mime.dart';
-import 'package:my_medical_app/screens/locations/hospital_location.dart';
-import 'package:my_medical_app/uplaod/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
@@ -211,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _logger.i('File size: ${(await file.length() / 1024).toStringAsFixed(2)} KB');
 
       final response = await dio.post(
-        'https://mtl-dez3.onrender.com/api/v1/ocr/upload',
+        'https://medical-test-locator-1-zbbq.onrender.com/api/v1/ocr/upload',
         data: formData,
         options: options,
       );
@@ -355,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _logger.i('API query: test=$testsQuery, userLat=$userLat, userLon=$userLon');
 
       final url =
-          'https://mtl-dez3.onrender.com/api/v1/institution/searchByTest?test=$testsQuery&userLat=$userLat&userLon=$userLon';
+          'https://medical-test-locator-1-zbbq.onrender.com/api/v1/institution/searchByTest?test=$testsQuery&userLat=$userLat&userLon=$userLon';
 
       final dio = Dio();
       final response = await dio.get(
@@ -473,7 +473,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _logger.i('Search hospitals API query: test=$testsQuery, userLat=$userLat, userLon=$userLon');
 
       final url =
-          'https://mtl-dez3.onrender.com/api/v1/institution/searchByTest?test=$testsQuery&userLat=$userLat&userLon=$userLon';
+          'https://medical-test-locator-1-zbbq.onrender.com/api/v1/institution/searchByTest?test=$testsQuery&userLat=$userLat&userLon=$userLon';
 
       final dio = Dio();
       final response = await dio.get(

@@ -1,4 +1,4 @@
-name: my_medical_app
+name: medimap
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -47,7 +47,12 @@ dependencies:
   clipboard: ^0.1.3
   flutter_native_splash: ^2.4.6
   video_player: ^2.9.5
+  flutter_launcher_icons: ^0.14.3
 
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "images/L.png"
 flutter_native_splash:
   image: images/L.png # Path to your logo image (must be PNG)
   android: true

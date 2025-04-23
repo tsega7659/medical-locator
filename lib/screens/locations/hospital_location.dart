@@ -142,7 +142,7 @@ class _HospitalLocationState extends State<HospitalLocation> {
       );
 
       final url =
-          'https://mtl-dez3.onrender.com/api/v1/institution/searchByTest?test=$testsQuery&userLat=$userLat&userLon=$userLon';
+          'https://medical-test-locator-1-zbbq.onrender.com/api/v1/institution/searchByTest?test=$testsQuery&userLat=$userLat&userLon=$userLon';
 
       final dio = Dio();
       final response = await dio.get(

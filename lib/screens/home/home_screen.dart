@@ -1078,51 +1078,62 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     crossAxisAlignment: CrossAxisAlignment.start,
                                                     children: [
                                                       Row(
-                                                        children: [
-                                                          const Icon(Icons.access_time, color: Colors.black87, size: 16),
-                                                          const SizedBox(width: 4),
-                                                          Text(
-                                                          'Working Hours:',
-                                                          style: GoogleFonts.poppins(
-                                                            fontSize: 15,
-                                                            fontWeight: FontWeight.bold,
-                                                            color: Colors.black87,
-                                                          ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      const SizedBox(height: 2),
-                                                      Text(
-                                                        hospital['workingHours'] ?? 'Mon - Sun, 7am - 10pm',
-                                                        style: GoogleFonts.poppins(
-                                                          fontSize: 15,
-                                                          color: Colors.black54,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      Row(
-                                                        children: [
-                                                          const Icon(Icons.timer, color: Colors.black87, size: 16),
-                                                          const SizedBox(width: 4),
-                                                          Text(
-                                                            'Test Duration:',
+                                                      children: [
+                                                        const Icon(Icons.access_time, color: Colors.black87, size: 16),
+                                                        const SizedBox(width: 4),
+                                                        Expanded(
+                                                          child: Text(
+                                                            'Working Hours:',
                                                             style: GoogleFonts.poppins(
                                                               fontSize: 15,
                                                               fontWeight: FontWeight.bold,
                                                               color: Colors.black87,
                                                             ),
+                                                            overflow: TextOverflow.ellipsis,
                                                           ),
-                                                        ],
+                                                        ),
+                                                        const SizedBox(width: 4),
+                                                        Expanded(
+                                                          child: Text(
+                                                            hospital['serviceHours'] ?? 'Mon - Sun, 7am - 10pm',
+                                                            style: GoogleFonts.poppins(
+                                                              fontSize: 15,
+                                                              color: Colors.black54,
+                                                            ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ),
+                                                      ],
                                                       ),
-                                                      const SizedBox(height: 2),
-                                                      Text(
-                                                        hospital['turnaroundTime'] ?? '48 hr',
+                                                      const SizedBox(height: 8),
+                                                      Row(
+                                                      children: [
+                                                        const Icon(Icons.timer, color: Colors.black87, size: 16),
+                                                        const SizedBox(width: 4),
+                                                        Text(
+                                                        'Test Duration:',
+                                                        style: GoogleFonts.poppins(
+                                                          fontSize: 15,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.black87,
+                                                        ),
+                                                        ),
+                                                        const SizedBox(width: 4),
+                                                        Text(
+                                                        (hospital['tests'] as List<dynamic>?)
+                                                            ?.where((test) => test['name'] == _extractedTests?.first)
+                                                            .map((test) => '${test['turnaroundTime']}')
+                                                            .join(', ') ?? 'No tests available',
                                                         style: GoogleFonts.poppins(
                                                           fontSize: 12,
                                                           color: Colors.black54,
                                                         ),
+                                                        ),
+                                                      ],
                                                       ),
                                                     ],
+                                                    
+                
                                                   ),
                                                 ],
                                               ),

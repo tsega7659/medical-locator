@@ -624,7 +624,7 @@ class _DiagnosticCenterCard extends StatelessWidget {
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
+                                  color: Colors.black54,
                                 ),
                               ),
                             ),
@@ -699,7 +699,7 @@ class _DiagnosticCenterCard extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.only(bottom: 4),
         child: Text(
-          '${test['name'] ?? 'Unknown Test'}: ${test['turnaroundTime']?.toString() ?? 'N/A'}',
+          ' ${test['turnaroundTime']?.toString() ?? 'N/A'}',
           style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
         ),
       );
